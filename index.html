@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<!-- saved from url=(0031)http://hicous.cn/Game/Memo.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=GBK">
+	<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=0">
+	<title>Memo</title>
+	<link rel="shortcut icon" type="image/x-icon" href="http://hicous.cn/Game/memo.ico">
+	<style type="text/css">
+		*{-webkit-tap-highlight-color: rgba(0,0,0,0);-webkit-tap-highlight-color:transparent;}
+		.title{
+			text-align: center;
+			font-size: 70px;
+			font-weight: bold;
+			color: #fff;
+			text-shadow: 0px 2px 3px #cbcbcb;
+		}
+		#box {
+			position: relative;
+			width: 300px;
+			height: 300px;
+			margin: 20px auto;
+			display: flex;
+			flex-direction: column;
+		}
+		.button{
+			background: #4a4266;
+			height: 50px;
+			margin: 30px auto;
+			text-align: center;
+			border-radius: 10px;
+			line-height: 50px;
+			font-size: 20px;
+			color: #fff;
+			box-shadow: 0px 3px 6px #cbcbcb;
+			width: 200px;
+		}
+		.button:active {
+			background: #177cb0;
+		}
+		.grid{
+			flex-direction:row;
+			flex: 1;
+			display: flex;
+		}
+		.cell{
+			transition: .2s all;
+			border-radius: 50%;
+			flex:1;
+			margin: 1%;
+			background: #f7f7f7;
+			box-shadow: 0px 2px 6px  hsla(20,20%,70%, 0.5) inset	
+		}
+		.cell[show = true]{
+			background: #ff461f;
+		}
+		.alert{
+			transition: .3s all;
+			height: 150px;
+			position: absolute; left: 0; top: 0; right: 0; bottom: 0;
+			width: 300px;
+			background: #fff;
+			box-shadow: 0px 2px 10px #666;
+			border-radius: 5px;
+			z-index: 2;
+			margin: auto;
+		}
+		#mask{
+			display: none;
+			transition: .5s all;
+			content: '';
+			position: fixed;
+			top: 0;left: 0;
+			height: 100%;
+			width: 100%;
+			background: rgba(0, 0, 0,0.5);
+		}
+		#mask.active{
+			display: block;
+		}
+		.label{
+			text-align: center;
+			margin: 10px;
+			font-size: 30px;
+			color: #4a4266;
+		}
+		#toast{
+			margin: auto;
+			position: absolute; 
+			left: 0; top: 0; right: 0; bottom: 0;
+			background: rgba(0,0,0,0.5);
+			padding: 5px;
+			height: 40px;
+			width: 100px;
+			text-align: center;
+			color: #fff;
+			font-size: 20px;
+			line-height: 40px;
+			border-radius: 40px;
+			transition: .3s all;
+			display: none;
+		}
+		#toast.active{
+			display: block;
+		}
+	</style>
+</head>
+<body>
+<h2 class="title">Memo</h2>
+<div id="box">
+	<div class="button" onclick="box.setGrid(3)">Start!</div>
+</div>
+<div id="mask">
+	<div class="alert">
+		<div class="label">Game Over</div>
+		<div class="button" onclick="box.ReStart()">ReStart!</div>
+	</div>
+</div>
+<div id="toast"></div>
+<script type="text/javascript">
+/* 创建栅格 */
+var box = {
+	grid: 0,
+	rightList: [],
+	chooseList: [],
+	disabled: true,
+	setGrid (num){
+		document.querySelector('#box').innerHTML = ''
+		this.grid = num
+		this.rightList = []
+		this.chooseList = [] 
+		this.setList()
+		this.LevelToast()
+	},
+	LevelToast () {
+		document.querySelector('#toast').setAttribute('class', 'active')
+		document.querySelector('#toast').innerHTML = `Level: ${this.grid-2}`
+		setTimeout(()=> {
+			document.querySelector('#toast').removeAttribute('class')
+			this.init()
+		}, 1000)
+		
+	},
+	ReStart () {
+		document.querySelector('#mask').removeAttribute('class')
+		this.setGrid(3)
+	},
+	/* 创建栅格 */
+	createGrid (className, id, index = 0, data = -1) {
+		let e = document.createElement('div')
+		e.className = className
+		document.querySelectorAll(id)[index].appendChild(e)
+		data > -1 ?  this.setEventListener(e, data): 0
+
+	},
+	/* 设置监听对象 */
+	setEventListener (event, index) {
+		let that = this
+		event.setAttribute('data', index)
+		event.addEventListener('click', () => {
+			if (!this.disabled) {
+				this.rightList[+event.getAttribute('data')] ? this.eventRight(event):this.eventWrong(event)
+			}
+		})
+	},
+	/* 设置序列 */
+	setList () {
+		let list = new Set()
+		let len = this.grid*2-1
+		for (var i = 0; i < len; i++) {
+			let a =parseInt(Math.random()*(this.grid * this.grid))
+			list.add(a)
+		} 
+		list.forEach((item)=> {
+			this.rightList[item] = true
+		})
+	},
+	/* 选对 */
+	eventRight (event){
+		let pass = true
+		this.chooseList[+event.getAttribute('data')] = true
+		event.setAttribute('show', true)
+		this.rightList.forEach((item,index) =>{
+			if(item!==this.chooseList[index]) {
+				pass = false
+			}
+		})
+		setTimeout(()=> {
+			if (pass) {
+				this.disabled = true
+				this.grid++
+				this.setGrid(this.grid)
+			}
+		}, 500)
+
+	},
+	/* 选错 */
+	eventWrong (event) {
+		document.querySelector('#mask').setAttribute('class', 'active')
+	},
+	/* start */
+	start () {
+		this.rightList.forEach((item,index) => {
+			if(item) {
+				document.querySelectorAll('.cell')[index].setAttribute('show', true)	
+			}
+			setTimeout(()=> {
+				document.querySelectorAll('.cell')[index].removeAttribute('show')
+				this.disabled = false
+			}, 2000)
+		})
+	},
+	init() {
+		for (let i = 0; i< this.grid ;i++) {
+			this.createGrid('grid', '#box')
+			for (let j = 0; j<this.grid; j++) {
+				this.createGrid('cell', '.grid', i, i*this.grid + j)	
+			}
+		}
+		this.start()
+	}
+
+}
+</script>
+
+<div id="cli_dialog_div"></div></body></html>
